@@ -27,7 +27,7 @@
 ### 方式一：使用 pip 安装
 
 ```bash
-pip install PyMuPDF Pillow tkinterdnd2
+pip install PyMuPDF tkinterdnd2
 ```
 
 ### 方式二：使用 requirements.txt
@@ -35,6 +35,38 @@ pip install PyMuPDF Pillow tkinterdnd2
 ```bash
 pip install -r requirements.txt
 ```
+
+## 打包发布
+
+### 安装PyInstaller
+
+```bash
+pip install pyinstaller
+```
+
+### 打包命令
+
+```bash
+pyinstaller --name=PDFUnlocker \
+            --onefile \
+            --windowed \
+            --icon=img_ico.ico \
+            --add-data=img.png;. \
+            --add-data=img_ico.png;. \
+            --add-data=img_ico.ico;. \
+            --hidden-import=fitz \
+            --hidden-import=tkinterdnd2 \
+            PDFUnlocker.py
+```
+```powershell
+pyinstaller --onefile --windowed --icon=img_ico.ico --add-data "img.png;." --add-data "img_ico.png;." --hidden-import=fitz --hidden-import=tkinterdnd2 --exclude-module=unittest,test,pydoc,email,http,xml,html,ctypes,distutils,site,lib2to3,pdb,doctest,ensurepip,venv,turtledemo,tkinter.test,tkinter.dnd --clean --noconfirm PDFUnlocker.py
+```
+### 打包说明
+
+- **输出目录**：`dist/PDFUnlocker.exe`
+- **无控制台窗口**：打包后为纯GUI应用，无黑色控制台窗口
+- **资源文件**：自动包含 `img.png`、`img_ico.png`、`img_ico.ico`
+- **隐藏导入**：fitz 和 tkinterdnd2
 
 ## 使用方法
 
@@ -57,8 +89,9 @@ python PDFUnlocker.py
 | 文件 | 说明 |
 |------|------|
 | `PDFUnlocker.py` | 主程序文件 |
-| `img.png` | 拖拽区域背景图（可选） |
-| `img_256.png` | 窗口图标（可选，256x256像素） |
+| `img.png` | 拖拽区域背景图（500x300像素） |
+| `img_ico.png` | 窗口图标 |
+| `img_ico.ico` | 应用图标（打包时使用） |
 | `requirements.txt` | 依赖列表 |
 
 ## 依赖列表
@@ -66,7 +99,6 @@ python PDFUnlocker.py
 | 依赖包 | 版本 | 说明 |
 |--------|------|------|
 | PyMuPDF | >=1.23.0 | PDF处理核心库 |
-| Pillow | >=9.0.0 | 图片处理库 |
 | tkinterdnd2 | >=0.3.0 | 拖拽功能支持 |
 
 ## 技术实现

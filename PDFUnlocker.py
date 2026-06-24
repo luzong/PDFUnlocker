@@ -4,16 +4,29 @@
 
 # 导入操作系统相关模块，用于文件路径处理
 import os
+import sys
 # 导入PyMuPDF库，别名fitz，用于PDF文件的读取和解密操作
 import fitz  # PyMuPDF
+# ✅ 新增：导入 tkinter 作为别名，用于 PhotoImage
+import tkinter as tk
 # 从tkinter库导入所需组件：主窗口、标签、框架、字符串变量、按钮、文件对话框、消息框
 from tkinter import Tk, Label, Frame, StringVar, Button, filedialog, messagebox
 # 从tkinterdnd2库导入拖拽相关组件，实现文件拖拽功能
 from tkinterdnd2 import DND_FILES, TkinterDnD
-# 从PIL库导入Image和ImageTk，用于图片处理和显示
-from PIL import Image, ImageTk
+# ❌ 删除：from PIL import Image, ImageTk  # 不再需要PIL
 # 从tkinter.ttk导入进度条组件
 from tkinter.ttk import Progressbar
+
+# ✅ 新增：获取资源路径的函数（打包和开发环境都适用）
+def resource_path(relative_path):
+    """获取资源的绝对路径，兼容开发环境和 PyInstaller 打包后"""
+    try:
+        # PyInstaller 打包后，资源在 _MEIPASS 临时目录
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # 开发环境，直接使用当前目录
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 # 定义PDF解密工具类，继承自object（Python3默认）
 class PDFDecryptTool:
@@ -28,17 +41,20 @@ class PDFDecryptTool:
         # 设置窗口大小不可调整（宽、高都固定）
         self.root.resizable(False, False)
 
-        # 定义窗口图标路径（根目录下的256x256锁图标）
-        icon_path = "img_256.png"
-        # 检查图标文件是否存在
+        # 定义窗口图标下的256下的256x256锁图标）
+        icon_path = resource_path("img_ico.png")
         if os.path.exists(icon_path):
             try:
-                # 使用PIL打开图标文件
-                icon_img = Image.open(icon_path)
-                # 将PIL图片转换为Tkinter可用的PhotoImage对象
-                photo_icon = ImageTk.PhotoImage(icon_img)
+                # ✅ 修改：使用 tk.PhotoImage 直接加载 PNG（无需PIL）
+                # 使用PIL打开图标文件 → 已删除
+                # icon_img = Image.open(icon_path)
+                # 将PIL图片转换为Tkinter可用的PhotoImage对象 → 已删除
+                # photo_icon = ImageTk.PhotoImage(icon_img)
+                
+                # 直接用 tk.PhotoImage 加载 PNG
+                self.icon_img = tk.PhotoImage(file=icon_path)
                 # 设置窗口图标，False表示不应用于所有顶层窗口
-                self.root.iconphoto(False, photo_icon)
+                self.root.iconphoto(False, self.icon_img)
             except Exception as e:
                 # 捕获并打印图标加载异常信息
                 print(f"窗口图标加载失败: {e}")
@@ -63,24 +79,40 @@ class PDFDecryptTool:
         drop_frame.pack_propagate(False)  # 锁定frame尺寸500x300
 
         # 定义背景图片路径
-        bg_img_path = "img.png"
+        bg_img_path = resource_path("img.png")
         # 初始化背景图片对象为None
         self.bg_photo = None
         # 检查背景图片文件是否存在
         if os.path.exists(bg_img_path):
             try:
-                # 使用PIL打开背景图片文件
-                bg_image = Image.open(bg_img_path)
-                # 将背景图片缩放为500x300，使用LANCZOS算法保持画质
-                bg_image = bg_image.resize((500, 300), Image.Resampling.LANCZOS)
-                # 将PIL图片转换为Tkinter可用的PhotoImage对象
-                self.bg_photo = ImageTk.PhotoImage(bg_image)
+                # ✅ 修改：使用 tk.PhotoImage 直接加载 PNG（无需PIL）
+                # 使用PIL打开背景图片文件 → 已删除
+                # bg_image = Image.open(bg_img_path)
+                # 将背景图片缩放为500x300，使用LANCZOS算法保持画质 → 已删除
+                # bg_image = bg_image.resize((500, 300), Image.Resampling.LANCZOS)
+                # 将PIL图片转换为Tkinter可用的PhotoImage对象 → 已删除
+                # self.bg_photo = ImageTk.PhotoImage(bg_image)
+                
+                # ⚠️ 注意：tk.PhotoImage 不支持缩放，请确保 img.png 已经是 500x300 像素
+                self.bg_photo = tk.PhotoImage(file=bg_img_path)
             except Exception as e:
                 # 捕获并打印背景图加载异常信息
                 print(f"拖拽背景图加载失败: {e}")
 
-        # 创建标签组件，显示背景图片，背景色白色，鼠标悬停显示手型光标
-        self.drop_label = Label(drop_frame, image=self.bg_photo, bg="#ffffff", cursor="hand2")
+        # ✅ 修改：如果图片加载成功就显示图片，否则显示文字界面
+        if self.bg_photo:
+            # 创建标签组件，显示背景图片，背景色白色，鼠标悬停显示手型光标
+            self.drop_label = Label(drop_frame, image=self.bg_photo, bg="#ffffff", cursor="hand2")
+        else:
+            # 备选方案：图片不存在或加载失败时，显示纯文字界面
+            self.drop_label = Label(
+                drop_frame,
+                text="📄 拖拽 PDF 文件到这里\n或点击选择文件",
+                font=("微软雅黑", 16),
+                bg="#f0f8ff",
+                fg="#666",
+                cursor="hand2"
+            )
         # 将标签铺满整个拖拽框架区域
         self.drop_label.pack(expand=True, fill="both")
 
@@ -230,6 +262,15 @@ class PDFDecryptTool:
         messagebox.showinfo("执行结果", msg)
         # 更新进度文字为最终状态
         self.progress_text.set(f"全部完成，成功{success_count}个")
+        
+        # ✅ 新增：解密成功后自动打开导出目录（至少成功解密一个文件时）
+        if success_count > 0:
+            try:
+                # 使用 os.startfile 在 Windows 上打开资源管理器
+                os.startfile(out_dir)
+            except Exception as e:
+                # 捕获并打印打开目录失败的异常信息
+                print(f"打开导出目录失败: {e}")
 
 # 程序入口：当脚本直接运行时执行
 if __name__ == "__main__":
